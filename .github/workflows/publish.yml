@@ -1,0 +1,29 @@
+name: Publish to pkg.go.dev
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - name: Run tests
+        run: go test ./...
+      
+      - name: Verify module
+        run: go mod verify
+      
+      # Go modules are published automatically when tags are pushed
+      # pkg.go.dev will index the module automatically
+      - name: Module published
+        run: |
+          echo "✅ Go module published to pkg.go.dev"
+          echo "Visit: https://pkg.go.dev/github.com/magebase-dev/openai-go@${{ github.ref_name }}"
