@@ -1,4 +1,4 @@
-module github.com/skew-ai/openai-go
+module github.com/langmesh-ai/openai-go
 
 go 1.21
 

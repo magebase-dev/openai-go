@@ -1,4 +1,4 @@
-// Package skew provides a drop-in replacement for OpenAI Go client
+// Package langmesh provides a drop-in replacement for OpenAI Go client
 //
 // Usage:
 //
@@ -6,11 +6,11 @@
 //	import "github.com/sashabaranov/go-openai"
 //
 //	// After
-//	import openai "github.com/skew-ai/openai-go"
+//	import openai "github.com/langmesh-ai/openai-go"
 //
 //	client := openai.NewClient(apiKey)
 //	// Works exactly the same!
-package skew
+package langmesh
 
 import (
 	"bytes"
@@ -27,10 +27,10 @@ import (
 )
 
 var (
-	skewAPIKey          = os.Getenv("SKEW_API_KEY")
-	skewTelemetryURL    = getEnv("SKEW_TELEMETRY_ENDPOINT", "https://api.skew.ai/v1/telemetry")
-	skewProxyEnabled    = os.Getenv("SKEW_PROXY_ENABLED") == "true"
-	skewBaseURL         = getEnv("SKEW_BASE_URL", "https://api.skew.ai/v1/openai")
+	langmeshAPIKey          = os.Getenv("langmesh_API_KEY")
+	langmeshTelemetryURL    = getEnv("langmesh_TELEMETRY_ENDPOINT", "https://api.langmesh.ai/v1/telemetry")
+	langmeshProxyEnabled    = os.Getenv("langmesh_PROXY_ENABLED") == "true"
+	langmeshBaseURL         = getEnv("langmesh_BASE_URL", "https://api.langmesh.ai/v1/openai")
 )
 
 func getEnv(key, defaultValue string) string {
@@ -40,7 +40,7 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// Client is a SKEW-wrapped OpenAI client
+// Client is a langmesh-wrapped OpenAI client
 type Client struct {
 	*openai.Client
 	telemetryEnabled bool
@@ -49,17 +49,17 @@ type Client struct {
 	httpClient       *http.Client
 }
 
-// NewClient creates a new SKEW-wrapped OpenAI client
+// NewClient creates a new langmesh-wrapped OpenAI client
 func NewClient(authToken string) *Client {
 	config := openai.DefaultConfig(authToken)
 
-	// If proxy is enabled, route through SKEW
-	if skewProxyEnabled && skewAPIKey != "" {
-		config.BaseURL = skewBaseURL
+	// If proxy is enabled, route through langmesh
+	if langmeshProxyEnabled && langmeshAPIKey != "" {
+		config.BaseURL = langmeshBaseURL
 		config.HTTPClient = &http.Client{
-			Transport: &skewTransport{
+			Transport: &langmeshTransport{
 				base:      http.DefaultTransport,
-				skewKey:   skewAPIKey,
+				langmeshKey:   langmeshAPIKey,
 				originalKey: authToken,
 			},
 		}
@@ -67,7 +67,7 @@ func NewClient(authToken string) *Client {
 
 	client := &Client{
 		Client:           openai.NewClientWithConfig(config),
-		telemetryEnabled: skewAPIKey != "",
+		telemetryEnabled: langmeshAPIKey != "",
 		telemetryBuffer:  make([]TelemetryEvent, 0, 10),
 		httpClient:       &http.Client{Timeout: 5 * time.Second},
 	}
@@ -149,13 +149,13 @@ func (c *Client) flushTelemetry() {
 			return
 		}
 
-		req, err := http.NewRequest("POST", skewTelemetryURL, bytes.NewBuffer(jsonData))
+		req, err := http.NewRequest("POST", langmeshTelemetryURL, bytes.NewBuffer(jsonData))
 		if err != nil {
 			return
 		}
 
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+skewAPIKey)
+		req.Header.Set("Authorization", "Bearer "+langmeshAPIKey)
 
 		_, _ = c.httpClient.Do(req)
 		// Silent drop - telemetry must never break user's app
@@ -189,16 +189,16 @@ func estimateCost(model string, promptTokens, completionTokens int) float64 {
 		(float64(completionTokens)/1_000_000)*modelPricing["output"]
 }
 
-// skewTransport adds SKEW headers to requests
-type skewTransport struct {
+// langmeshTransport adds langmesh headers to requests
+type langmeshTransport struct {
 	base        http.RoundTripper
-	skewKey     string
+	langmeshKey     string
 	originalKey string
 }
 
-func (t *skewTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("X-SKEW-API-Key", t.skewKey)
-	req.Header.Set("X-SKEW-Original-API-Key", t.originalKey)
+func (t *langmeshTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("X-langmesh-API-Key", t.langmeshKey)
+	req.Header.Set("X-langmesh-Original-API-Key", t.originalKey)
 	return t.base.RoundTrip(req)
 }
 

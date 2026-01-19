@@ -1,4 +1,4 @@
-package skew
+package langmesh
 
 import (
 	"testing"
@@ -11,10 +11,10 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestClientWithoutSkewKey(t *testing.T) {
-	t.Setenv("SKEW_API_KEY", "")
+func TestClientWithoutlangmeshKey(t *testing.T) {
+	t.Setenv("langmesh_API_KEY", "")
 	client := NewClient("test-key")
 	if client == nil {
-		t.Fatal("Expected client to work without SKEW_API_KEY")
+		t.Fatal("Expected client to work without langmesh_API_KEY")
 	}
 }
